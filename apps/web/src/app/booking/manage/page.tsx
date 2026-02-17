@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { getTenantSlugFromClient } from '@/lib/tenant';
@@ -44,6 +44,14 @@ interface ManageResponse {
 const CANCELLABLE_STATUSES = ['pending', 'confirmed', 'inquiry'];
 
 export default function ManagePage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" /></div>}>
+      <ManagePageContent />
+    </Suspense>
+  );
+}
+
+function ManagePageContent() {
   const searchParams = useSearchParams();
   const prefillRef = searchParams.get('ref') || '';
 

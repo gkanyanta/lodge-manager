@@ -13,3 +13,4 @@ services/api/prisma/seed.js
 services/api/prisma/seed.js.map
 services/api/prisma/seed.d.ts
 services/api/prisma/seed.d.ts.map
+.vercel

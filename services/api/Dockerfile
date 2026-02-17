@@ -1,38 +1,41 @@
 FROM node:20-alpine AS base
 
-# Install dependencies
-FROM base AS deps
-WORKDIR /app
-COPY services/api/package.json ./services/api/
-COPY packages/shared/package.json ./packages/shared/
-COPY package.json ./
-RUN cd services/api && npm install
+RUN apk add --no-cache openssl
 
-# Build
-FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/services/api/node_modules ./services/api/node_modules
-COPY packages/shared ./packages/shared
-COPY services/api ./services/api
-COPY tsconfig.base.json ./
-RUN cd services/api && npx prisma generate && npm run build
+
+# Install dependencies
+COPY package.json ./
+RUN npm install
+
+# Copy source and prisma
+COPY prisma ./prisma
+COPY src ./src
+COPY tsconfig.build.json nest-cli.json ./
+
+# Generate Prisma client and build
+RUN npx prisma generate
+RUN npx nest build --tsc -p tsconfig.build.json
 
 # Production
-FROM base AS runner
+FROM node:20-alpine AS runner
+
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs
 
-COPY --from=builder /app/services/api/dist ./dist
-COPY --from=builder /app/services/api/node_modules ./node_modules
-COPY --from=builder /app/services/api/prisma ./prisma
-COPY --from=builder /app/services/api/package.json ./
+COPY --from=base /app/dist ./dist
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/prisma ./prisma
+COPY --from=base /app/package.json ./
+
+# Ensure nestjs user can write to prisma engines for migrate
+RUN chown -R nestjs:nodejs /app/node_modules/@prisma
 
 USER nestjs
-
-EXPOSE 4000
 
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
