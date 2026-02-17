@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "strictPropertyInitialization": false,
+    "noImplicitAny": false,
+    "paths": {
+      "@/*": ["src/*"],
+      "@lodge-manager/shared": ["../../packages/shared/src"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/__tests__/**", "**/*.spec.ts"]
+}

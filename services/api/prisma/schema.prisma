@@ -1,0 +1,596 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// TENANT (LODGE)
+// ============================================================
+
+model Tenant {
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  country       String?
+  currency      String   @default("USD")
+  timezone      String   @default("UTC")
+  logoUrl       String?
+  active        Boolean  @default(true)
+  settings      Json     @default("{}")  // Feature flags, payment config, etc.
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  users              User[]
+  roles              Role[]
+  rooms              Room[]
+  roomTypes          RoomType[]
+  guests             Guest[]
+  reservations       Reservation[]
+  ratePlans          RatePlan[]
+  seasonalRates      SeasonalRate[]
+  payments           Payment[]
+  ledgerEntries      LedgerEntry[]
+  incomes            Income[]
+  expenses           Expense[]
+  expenseCategories  ExpenseCategory[]
+  inventoryItems     InventoryItem[]
+  inventoryCategories InventoryCategory[]
+  suppliers          Supplier[]
+  stockMovements     StockMovement[]
+  housekeepingTasks  HousekeepingTask[]
+  auditLogs          AuditLog[]
+
+  @@map("tenants")
+}
+
+// ============================================================
+// AUTH & RBAC
+// ============================================================
+
+model User {
+  id            String   @id @default(uuid())
+  tenantId      String
+  email         String
+  passwordHash  String
+  firstName     String
+  lastName      String
+  phone         String?
+  active        Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  roles         UserRole[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  tenantId    String?  // null = platform-level role (super_admin)
+  name        String
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@unique([tenantId, name])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  resource    String   // e.g., "reservation", "payment", "inventory"
+  action      String   // e.g., "create", "read", "update", "delete"
+  description String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  roles       RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model UserRole {
+  id       String @id @default(uuid())
+  userId   String
+  roleId   String
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String
+  permissionId String
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// ============================================================
+// ROOMS & RATE PLANS
+// ============================================================
+
+model RoomType {
+  id           String   @id @default(uuid())
+  tenantId     String
+  name         String   // e.g., "Standard Double", "Deluxe Suite"
+  description  String?
+  maxOccupancy Int
+  basePrice    Decimal  @db.Decimal(10, 2)
+  amenities    Json     @default("[]") // string array
+  images       Json     @default("[]") // URL array
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  rooms            Room[]
+  ratePlans        RatePlan[]
+  seasonalRates    SeasonalRate[]
+  reservationRooms ReservationRoom[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("room_types")
+}
+
+model Room {
+  id         String   @id @default(uuid())
+  tenantId   String
+  roomTypeId String
+  number     String
+  floor      String?
+  status     String   @default("available") // available, occupied, reserved, dirty, out_of_service
+  notes      String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  roomType         RoomType          @relation(fields: [roomTypeId], references: [id])
+  reservationRooms ReservationRoom[]
+  housekeepingTasks HousekeepingTask[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("rooms")
+}
+
+model RatePlan {
+  id         String   @id @default(uuid())
+  tenantId   String
+  roomTypeId String
+  name       String   // e.g., "Standard Rate", "Weekend Special"
+  price      Decimal  @db.Decimal(10, 2)
+  startDate  DateTime @db.Date
+  endDate    DateTime @db.Date
+  minNights  Int      @default(1)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  roomType RoomType @relation(fields: [roomTypeId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, roomTypeId, startDate, endDate])
+  @@map("rate_plans")
+}
+
+model SeasonalRate {
+  id         String   @id @default(uuid())
+  tenantId   String
+  roomTypeId String
+  name       String   // e.g., "Peak Season", "Holiday Rate"
+  multiplier Decimal  @db.Decimal(4, 2) // e.g., 1.50 = 50% markup
+  startDate  DateTime @db.Date
+  endDate    DateTime @db.Date
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  roomType RoomType @relation(fields: [roomTypeId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, roomTypeId, startDate, endDate])
+  @@map("seasonal_rates")
+}
+
+// ============================================================
+// GUESTS & RESERVATIONS
+// ============================================================
+
+model Guest {
+  id         String   @id @default(uuid())
+  tenantId   String
+  firstName  String
+  lastName   String
+  email      String?
+  phone      String?
+  idNumber   String?  // National ID / passport
+  country    String?
+  notes      String?
+  verified   Boolean  @default(false) // Future OTP: set true when verified
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  reservations Reservation[]
+
+  @@index([tenantId])
+  @@index([tenantId, email])
+  @@index([tenantId, phone])
+  @@map("guests")
+}
+
+model Reservation {
+  id               String   @id @default(uuid())
+  tenantId         String
+  guestId          String
+  bookingReference String   @unique
+  checkIn          DateTime @db.Date
+  checkOut         DateTime @db.Date
+  numberOfGuests   Int
+  status           String   @default("pending") // inquiry, pending, confirmed, checked_in, checked_out, cancelled, no_show
+  specialRequests  String?
+  totalAmount      Decimal  @db.Decimal(10, 2)
+  paidAmount       Decimal  @default(0) @db.Decimal(10, 2)
+  source           String   @default("online") // online, walk_in, phone, agent
+  notes            String?
+  cancelledAt      DateTime?
+  cancelReason     String?
+  checkedInAt      DateTime?
+  checkedOutAt     DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  guest            Guest             @relation(fields: [guestId], references: [id])
+  reservationRooms ReservationRoom[]
+  stays            Stay[]
+  payments         Payment[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, checkIn, checkOut])
+  @@index([bookingReference])
+  @@map("reservations")
+}
+
+model ReservationRoom {
+  id            String   @id @default(uuid())
+  reservationId String
+  roomTypeId    String
+  roomId        String?  // Assigned room (null until check-in or manual assignment)
+  pricePerNight Decimal  @db.Decimal(10, 2)
+  createdAt     DateTime @default(now())
+
+  // Relations
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  roomType    RoomType    @relation(fields: [roomTypeId], references: [id])
+  room        Room?       @relation(fields: [roomId], references: [id])
+
+  @@index([reservationId])
+  @@index([roomId])
+  @@map("reservation_rooms")
+}
+
+model Stay {
+  id            String    @id @default(uuid())
+  reservationId String
+  roomId        String
+  checkIn       DateTime
+  checkOut      DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+
+  @@index([reservationId])
+  @@map("stays")
+}
+
+// ============================================================
+// PAYMENTS & LEDGER
+// ============================================================
+
+model Payment {
+  id              String   @id @default(uuid())
+  tenantId        String
+  reservationId   String?
+  amount          Decimal  @db.Decimal(10, 2)
+  currency        String   @default("USD")
+  method          String   // cash, card, mobile_money, bank_transfer, online
+  status          String   @default("initiated") // initiated, pending, paid, failed, refunded
+  transactionRef  String?
+  providerName    String?  // mock, stripe, paystack, etc.
+  providerData    Json?    // Provider-specific response data
+  description     String?
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  tenant        Tenant       @relation(fields: [tenantId], references: [id])
+  reservation   Reservation? @relation(fields: [reservationId], references: [id])
+  ledgerEntries LedgerEntry[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([transactionRef])
+  @@map("payments")
+}
+
+model LedgerEntry {
+  id            String   @id @default(uuid())
+  tenantId      String
+  type          String   // DEBIT, CREDIT
+  amount        Decimal  @db.Decimal(10, 2) // Always positive
+  category      String   // ROOM_REVENUE, PAYMENT, REFUND, EXPENSE, ADJUSTMENT, DEPOSIT, INCOME_OTHER
+  referenceType String   // RESERVATION, PAYMENT, EXPENSE, INCOME, ADJUSTMENT
+  referenceId   String
+  paymentId     String?
+  description   String
+  createdBy     String?
+  createdAt     DateTime @default(now())
+
+  // Relations — NO updatedAt, this is append-only
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, category])
+  @@index([tenantId, createdAt])
+  @@index([referenceType, referenceId])
+  @@map("ledger_entries")
+}
+
+// ============================================================
+// INCOME & EXPENSES
+// ============================================================
+
+model Income {
+  id          String   @id @default(uuid())
+  tenantId    String
+  amount      Decimal  @db.Decimal(10, 2)
+  description String
+  source      String   // room_revenue, restaurant, bar, activity, other
+  method      String   // cash, card, mobile_money, bank_transfer
+  date        DateTime @db.Date
+  receivedBy  String?  // userId
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, date])
+  @@map("incomes")
+}
+
+model ExpenseCategory {
+  id       String @id @default(uuid())
+  tenantId String
+  name     String
+  active   Boolean @default(true)
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  expenses Expense[]
+
+  @@unique([tenantId, name])
+  @@map("expense_categories")
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  tenantId    String
+  categoryId  String
+  amount      Decimal  @db.Decimal(10, 2)
+  description String
+  method      String   // cash, card, mobile_money, bank_transfer
+  date        DateTime @db.Date
+  vendor      String?
+  receipt     String?  // URL to receipt image
+  approvedBy  String?  // userId
+  createdBy   String?  // userId
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id])
+  category ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, date])
+  @@map("expenses")
+}
+
+// ============================================================
+// INVENTORY
+// ============================================================
+
+model InventoryCategory {
+  id       String @id @default(uuid())
+  tenantId String
+  name     String
+  active   Boolean @default(true)
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id])
+  items  InventoryItem[]
+
+  @@unique([tenantId, name])
+  @@map("inventory_categories")
+}
+
+model Supplier {
+  id       String  @id @default(uuid())
+  tenantId String
+  name     String
+  contact  String?
+  email    String?
+  phone    String?
+  address  String?
+  active   Boolean @default(true)
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id])
+  items  InventoryItem[]
+
+  @@index([tenantId])
+  @@map("suppliers")
+}
+
+model InventoryItem {
+  id            String  @id @default(uuid())
+  tenantId      String
+  categoryId    String
+  supplierId    String?
+  name          String
+  sku           String?
+  unit          String  @default("pcs") // pcs, kg, litre, etc.
+  currentStock  Int     @default(0)
+  reorderLevel  Int     @default(0)
+  costPrice     Decimal @default(0) @db.Decimal(10, 2)
+  active        Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant         Tenant            @relation(fields: [tenantId], references: [id])
+  category       InventoryCategory @relation(fields: [categoryId], references: [id])
+  supplier       Supplier?         @relation(fields: [supplierId], references: [id])
+  stockMovements StockMovement[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("inventory_items")
+}
+
+model StockMovement {
+  id        String   @id @default(uuid())
+  tenantId  String
+  itemId    String
+  type      String   // stock_in, stock_out, adjustment
+  quantity  Int      // positive for in, negative for out
+  reason    String?
+  reference String?  // PO number, invoice, etc.
+  createdBy String?  // userId
+  createdAt DateTime @default(now())
+
+  // Append-only: no updatedAt
+  tenant Tenant        @relation(fields: [tenantId], references: [id])
+  item   InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([tenantId])
+  @@index([itemId])
+  @@map("stock_movements")
+}
+
+// ============================================================
+// HOUSEKEEPING
+// ============================================================
+
+model HousekeepingTask {
+  id          String    @id @default(uuid())
+  tenantId    String
+  roomId      String
+  assignedTo  String?   // userId or staff name
+  status      String    @default("pending") // pending, in_progress, done
+  priority    String    @default("normal") // low, normal, high, urgent
+  notes       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  room   Room   @relation(fields: [roomId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, roomId])
+  @@map("housekeeping_tasks")
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String?
+  action     String   // create, update, delete, status_change, login, logout
+  entityType String   // reservation, payment, room, inventory, user, etc.
+  entityId   String?
+  before     Json?    // State before change
+  after      Json?    // State after change
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  // Append-only: no updatedAt
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
