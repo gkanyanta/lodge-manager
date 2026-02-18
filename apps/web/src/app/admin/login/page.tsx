@@ -15,7 +15,7 @@ interface LoginResponse {
     lastName: string;
     roles: string[];
   };
-  token: string;
+  accessToken: string;
 }
 
 export default function AdminLoginPage() {
@@ -39,8 +39,8 @@ export default function AdminLoginPage() {
       );
 
       localStorage.setItem('lodge_user', JSON.stringify(data.user));
-      if (data.token) {
-        localStorage.setItem('lodge_token', data.token);
+      if (data.accessToken) {
+        localStorage.setItem('lodge_token', data.accessToken);
       }
 
       router.push('/admin/dashboard');

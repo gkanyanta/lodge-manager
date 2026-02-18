@@ -23,6 +23,13 @@ class ApiClient {
       headers['x-tenant-slug'] = tenantSlug;
     }
 
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('lodge_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...fetchOptions,
       headers,
