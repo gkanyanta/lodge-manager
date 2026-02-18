@@ -4,8 +4,10 @@ import { Suspense, useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getTenantSlugFromClient } from '@/lib/tenant';
-import { formatCurrency, nightsBetween, cn } from '@/lib/utils';
+import { formatCurrency, nightsBetween } from '@/lib/utils';
+import { getRoomImages } from '@/lib/images';
 import Button from '@/components/ui/Button';
+import RoomCard from '@/components/booking/RoomCard';
 
 interface RoomTypeResult {
   roomTypeId: string;
@@ -32,7 +34,7 @@ interface SelectedRoom {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" /></div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-gold-200 border-t-gold-600" /></div>}>
       <SearchPageContent />
     </Suspense>
   );
@@ -131,11 +133,22 @@ function SearchPageContent() {
     router.push('/booking/details');
   }
 
+  function parseImages(room: RoomTypeResult): string[] {
+    if (!room.images) return [];
+    if (Array.isArray(room.images)) return room.images;
+    try {
+      const parsed = JSON.parse(room.images as unknown as string);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
   return (
-    <div className="min-h-screen pb-32">
+    <div className="min-h-screen bg-stone-50 pb-32">
       {/* Header */}
       <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
           <button
             onClick={() => router.back()}
             className="flex h-10 w-10 items-center justify-center rounded-lg text-stone-600 hover:bg-stone-100 transition-colors"
@@ -146,7 +159,7 @@ function SearchPageContent() {
             </svg>
           </button>
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-semibold text-stone-900 truncate">Available Rooms</h1>
+            <h1 className="font-serif text-lg font-bold text-stone-900 truncate">Available Rooms</h1>
             <p className="text-xs text-stone-500">
               {checkIn} to {checkOut} &middot; {guests} {guests === 1 ? 'guest' : 'guests'} &middot; {nights} {nights === 1 ? 'night' : 'nights'}
             </p>
@@ -155,21 +168,24 @@ function SearchPageContent() {
       </header>
 
       {/* Content */}
-      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {loading && (
-          <div className="space-y-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="card animate-pulse">
-                <div className="h-5 w-2/3 rounded bg-stone-200" />
-                <div className="mt-3 h-4 w-full rounded bg-stone-100" />
-                <div className="mt-2 h-4 w-4/5 rounded bg-stone-100" />
-                <div className="mt-4 flex gap-2">
-                  <div className="h-6 w-16 rounded-full bg-stone-100" />
-                  <div className="h-6 w-16 rounded-full bg-stone-100" />
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="h-6 w-24 rounded bg-stone-200" />
-                  <div className="h-9 w-24 rounded bg-stone-100" />
+              <div key={i} className="animate-pulse overflow-hidden rounded-xl bg-white shadow-md ring-1 ring-stone-950/5">
+                <div className="aspect-[16/10] bg-stone-200" />
+                <div className="p-5">
+                  <div className="h-5 w-2/3 rounded bg-stone-200" />
+                  <div className="mt-3 h-4 w-full rounded bg-stone-100" />
+                  <div className="mt-2 h-4 w-4/5 rounded bg-stone-100" />
+                  <div className="mt-4 flex gap-2">
+                    <div className="h-6 w-16 rounded-full bg-stone-100" />
+                    <div className="h-6 w-16 rounded-full bg-stone-100" />
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-stone-100 pt-4">
+                    <div className="h-6 w-24 rounded bg-stone-200" />
+                    <div className="h-9 w-24 rounded bg-stone-100" />
+                  </div>
                 </div>
               </div>
             ))}
@@ -190,7 +206,7 @@ function SearchPageContent() {
             <svg className="mx-auto h-12 w-12 text-stone-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 16.318A4.486 4.486 0 0012.016 15a4.486 4.486 0 00-3.198 1.318M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
             </svg>
-            <h3 className="mt-3 text-sm font-semibold text-stone-900">No rooms available</h3>
+            <h3 className="mt-3 font-serif text-base font-semibold text-stone-900">No rooms available</h3>
             <p className="mt-1 text-sm text-stone-500">
               No rooms are available for the selected dates. Try different dates.
             </p>
@@ -201,97 +217,24 @@ function SearchPageContent() {
         )}
 
         {!loading && !error && results.length > 0 && (
-          <div className="space-y-4">
-            {results.map((room) => {
-              const selectedQty = selections[room.roomTypeId] || 0;
-              const isSelected = selectedQty > 0;
-
-              return (
-                <div
-                  key={room.roomTypeId}
-                  className={cn(
-                    'card transition-all duration-200',
-                    isSelected && 'ring-2 ring-primary-600 ring-offset-1',
-                  )}
-                >
-                  {/* Room header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-base font-semibold text-stone-900">{room.name}</h3>
-                      <p className="mt-1 text-sm text-stone-500 line-clamp-2">{room.description}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-lg font-bold text-primary-700">
-                        {formatCurrency(room.effectivePrice)}
-                      </p>
-                      <p className="text-xs text-stone-500">per night</p>
-                    </div>
-                  </div>
-
-                  {/* Meta info */}
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500">
-                    <span className="flex items-center gap-1">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                      </svg>
-                      Up to {room.maxOccupancy} guests
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                      </svg>
-                      {room.availableCount} available
-                    </span>
-                  </div>
-
-                  {/* Amenities */}
-                  {room.amenities && room.amenities.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {room.amenities.map((amenity) => (
-                        <span
-                          key={amenity}
-                          className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs text-stone-600"
-                        >
-                          {amenity}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Price for stay & quantity selector */}
-                  <div className="mt-4 flex items-center justify-between border-t border-stone-100 pt-4">
-                    <div>
-                      <p className="text-sm font-medium text-stone-900">
-                        {formatCurrency(room.effectivePrice * nights)} total
-                      </p>
-                      <p className="text-xs text-stone-500">
-                        for {nights} {nights === 1 ? 'night' : 'nights'}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <label htmlFor={`qty-${room.roomTypeId}`} className="sr-only">
-                        Quantity for {room.name}
-                      </label>
-                      <select
-                        id={`qty-${room.roomTypeId}`}
-                        value={selectedQty}
-                        onChange={(e) =>
-                          handleQuantityChange(room.roomTypeId, Number(e.target.value))
-                        }
-                        className="input-field w-auto min-h-[44px] pr-8"
-                      >
-                        {Array.from({ length: room.availableCount + 1 }, (_, i) => (
-                          <option key={i} value={i}>
-                            {i === 0 ? 'Select' : `${i} room${i > 1 ? 's' : ''}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {results.map((room) => (
+              <RoomCard
+                key={room.roomTypeId}
+                variant="selectable"
+                roomTypeId={room.roomTypeId}
+                name={room.name}
+                description={room.description}
+                maxOccupancy={room.maxOccupancy}
+                amenities={room.amenities}
+                effectivePrice={room.effectivePrice}
+                availableCount={room.availableCount}
+                nights={nights}
+                selectedQty={selections[room.roomTypeId] || 0}
+                onQuantityChange={handleQuantityChange}
+                images={parseImages(room)}
+              />
+            ))}
           </div>
         )}
       </main>
@@ -299,7 +242,7 @@ function SearchPageContent() {
       {/* Bottom bar */}
       {totalRooms > 0 && (
         <div className="fixed bottom-0 inset-x-0 z-20 border-t border-stone-200 bg-white px-4 py-3 shadow-lg sm:px-6">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-stone-900">
                 {totalRooms} {totalRooms === 1 ? 'room' : 'rooms'} selected
@@ -308,9 +251,12 @@ function SearchPageContent() {
                 {formatCurrency(totalPrice)} for {nights} {nights === 1 ? 'night' : 'nights'}
               </p>
             </div>
-            <Button onClick={handleContinue} size="md">
+            <button
+              onClick={handleContinue}
+              className="rounded-lg bg-gold-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gold-600 min-h-[44px]"
+            >
               Continue
-            </Button>
+            </button>
           </div>
         </div>
       )}

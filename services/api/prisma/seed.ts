@@ -134,7 +134,10 @@ async function main() {
       maxOccupancy: 2,
       basePrice: 85.00,
       amenities: JSON.stringify(['WiFi', 'TV', 'Air Conditioning', 'En-suite Bathroom']),
-      images: JSON.stringify([]),
+      images: JSON.stringify([
+        'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&q=80&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80&auto=format&fit=crop',
+      ]),
       sortOrder: 1,
     },
     {
@@ -144,7 +147,10 @@ async function main() {
       maxOccupancy: 3,
       basePrice: 150.00,
       amenities: JSON.stringify(['WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Garden View', 'En-suite Bathroom', 'Coffee Machine']),
-      images: JSON.stringify([]),
+      images: JSON.stringify([
+        'https://images.unsplash.com/photo-1590490360182-c33d955e5082?w=800&q=80&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80&auto=format&fit=crop',
+      ]),
       sortOrder: 2,
     },
     {
@@ -154,7 +160,10 @@ async function main() {
       maxOccupancy: 5,
       basePrice: 250.00,
       amenities: JSON.stringify(['WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Living Area', 'Kitchenette', '2 Bathrooms']),
-      images: JSON.stringify([]),
+      images: JSON.stringify([
+        'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800&q=80&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&q=80&auto=format&fit=crop',
+      ]),
       sortOrder: 3,
     },
     {
@@ -164,7 +173,10 @@ async function main() {
       maxOccupancy: 6,
       basePrice: 450.00,
       amenities: JSON.stringify(['WiFi', 'TV', 'Air Conditioning', 'Private Pool', 'Full Kitchen', 'BBQ Area', 'Butler Service']),
-      images: JSON.stringify([]),
+      images: JSON.stringify([
+        'https://images.unsplash.com/photo-1602002418082-a4443e081dd1?w=800&q=80&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1540541338287-41700207dee6?w=800&q=80&auto=format&fit=crop',
+      ]),
       sortOrder: 4,
     },
   ];

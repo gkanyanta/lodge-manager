@@ -33,9 +33,37 @@ const config: Config = {
           900: '#564034',
           950: '#2e211b',
         },
+        gold: {
+          50: '#fdfaf3',
+          100: '#faf0d5',
+          200: '#f4dfaa',
+          300: '#ecc974',
+          400: '#e4b04a',
+          500: '#d4982e',
+          600: '#b87a22',
+          700: '#995c1e',
+          800: '#7d4a20',
+          900: '#683e1e',
+          950: '#3b1f0d',
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-playfair)', 'Georgia', 'serif'],
+      },
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slide-up': {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fade-in 0.8s ease-out forwards',
+        'slide-up': 'slide-up 0.8s ease-out forwards',
       },
     },
   },

@@ -125,7 +125,7 @@ export default function DetailsPage() {
             </svg>
           </button>
           <div>
-            <h1 className="text-lg font-semibold text-stone-900">Guest Details</h1>
+            <h1 className="font-serif text-lg font-bold text-stone-900">Guest Details</h1>
             <p className="text-xs text-stone-500">Step 2 of 3</p>
           </div>
         </div>
@@ -217,8 +217,8 @@ export default function DetailsPage() {
 
           {/* Booking summary sidebar */}
           <div className="order-first lg:order-last">
-            <div className="card sticky top-20 space-y-4">
-              <h2 className="text-base font-semibold text-stone-900">Booking Summary</h2>
+            <div className="card sticky top-20 space-y-4 border-t-2 border-gold-400">
+              <h2 className="font-serif text-base font-semibold text-stone-900">Booking Summary</h2>
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -259,7 +259,7 @@ export default function DetailsPage() {
 
               <div className="flex justify-between text-base font-semibold">
                 <span className="text-stone-900">Total</span>
-                <span className="text-primary-700">{formatCurrency(bookingData.totalPrice)}</span>
+                <span className="text-gold-600">{formatCurrency(bookingData.totalPrice)}</span>
               </div>
 
               {/* Desktop: submit button in sidebar */}

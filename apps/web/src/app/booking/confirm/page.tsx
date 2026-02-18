@@ -120,7 +120,7 @@ export default function ConfirmPage() {
             </svg>
           </div>
 
-          <h1 className="mt-4 text-xl font-bold text-stone-900">Booking Confirmed!</h1>
+          <h1 className="mt-4 font-serif text-2xl font-bold text-stone-900">Booking Confirmed!</h1>
           <p className="mt-1 text-sm text-stone-500">Your reservation has been created.</p>
 
           {/* Reference */}
@@ -128,7 +128,7 @@ export default function ConfirmPage() {
             <p className="text-xs font-medium uppercase tracking-wider text-stone-500">
               Booking Reference
             </p>
-            <p className="mt-1 text-2xl font-bold tracking-wide text-primary-700">
+            <p className="mt-1 font-serif text-2xl font-bold tracking-wide text-gold-600">
               {confirmation.bookingReference}
             </p>
           </div>
@@ -149,7 +149,7 @@ export default function ConfirmPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-stone-500">Total</span>
-              <span className="font-semibold text-primary-700">
+              <span className="font-semibold text-gold-600">
                 {formatCurrency(confirmation.totalAmount)}
               </span>
             </div>
@@ -206,7 +206,7 @@ export default function ConfirmPage() {
             </svg>
           </button>
           <div>
-            <h1 className="text-lg font-semibold text-stone-900">Confirm & Pay</h1>
+            <h1 className="font-serif text-lg font-bold text-stone-900">Confirm & Pay</h1>
             <p className="text-xs text-stone-500">Step 3 of 3</p>
           </div>
         </div>
@@ -377,8 +377,8 @@ export default function ConfirmPage() {
 
           {/* Sidebar: price summary + confirm */}
           <div className="order-first lg:order-last">
-            <div className="card sticky top-20 space-y-4">
-              <h2 className="text-base font-semibold text-stone-900">Price Summary</h2>
+            <div className="card sticky top-20 space-y-4 border-t-2 border-gold-400">
+              <h2 className="font-serif text-base font-semibold text-stone-900">Price Summary</h2>
 
               <div className="space-y-2 text-sm">
                 {bookingData.rooms.map((room) => (
@@ -397,7 +397,7 @@ export default function ConfirmPage() {
 
               <div className="flex justify-between text-base font-semibold">
                 <span className="text-stone-900">Total</span>
-                <span className="text-primary-700">{formatCurrency(bookingData.totalPrice)}</span>
+                <span className="text-gold-600">{formatCurrency(bookingData.totalPrice)}</span>
               </div>
 
               <div className="hidden lg:block">

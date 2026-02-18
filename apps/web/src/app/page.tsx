@@ -1,198 +1,203 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Button from '@/components/ui/Button';
+import { useState, useEffect } from 'react';
+import HeroSlideshow from '@/components/booking/HeroSlideshow';
+import SearchForm from '@/components/booking/SearchForm';
+import RoomCard from '@/components/booking/RoomCard';
+import TestimonialsSection from '@/components/booking/TestimonialsSection';
+import Footer from '@/components/booking/Footer';
+
+const SHOWCASE_ROOMS = [
+  {
+    name: 'Standard Room',
+    description: 'Comfortable room with essential amenities. Perfect for solo travelers or couples.',
+    price: 85,
+  },
+  {
+    name: 'Deluxe Room',
+    description: 'Spacious room with premium furnishings and a beautiful garden view.',
+    price: 150,
+  },
+  {
+    name: 'Family Suite',
+    description: 'Large suite with separate living area, ideal for families.',
+    price: 250,
+  },
+  {
+    name: 'Luxury Villa',
+    description: 'Private villa with pool, perfect for a premium experience.',
+    price: 450,
+  },
+];
+
+const FEATURES = [
+  {
+    title: 'Breathtaking Location',
+    description: 'Surrounded by natural beauty with stunning views from every angle.',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Exceptional Service',
+    description: 'Our dedicated staff ensures every moment of your stay is perfect.',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Modern Comfort',
+    description: 'Luxury amenities blended with rustic charm for the ultimate retreat.',
+    icon: (
+      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+      </svg>
+    ),
+  },
+];
 
 export default function HomePage() {
-  const router = useRouter();
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const [scrolled, setScrolled] = useState(false);
 
-  const [checkIn, setCheckIn] = useState(today);
-  const [checkOut, setCheckOut] = useState(tomorrow);
-  const [guests, setGuests] = useState(2);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const newErrors: Record<string, string> = {};
-
-    if (!checkIn) newErrors.checkIn = 'Check-in date is required';
-    if (!checkOut) newErrors.checkOut = 'Check-out date is required';
-    if (checkIn && checkOut && checkIn >= checkOut) {
-      newErrors.checkOut = 'Check-out must be after check-in';
+  useEffect(() => {
+    function handleScroll() {
+      setScrolled(window.scrollY > 50);
     }
-    if (guests < 1) newErrors.guests = 'At least 1 guest required';
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    const params = new URLSearchParams({
-      checkIn,
-      checkOut,
-      guests: guests.toString(),
-    });
-    router.push(`/booking/search?${params.toString()}`);
-  }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600">
-            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-            </svg>
-          </div>
-          <span className="text-lg font-bold text-stone-900">Lodge Manager</span>
+      {/* Transparent Navbar */}
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? 'bg-white/95 shadow-sm backdrop-blur-sm'
+            : 'bg-transparent'
+        }`}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <a href="/" className="flex items-center gap-2">
+            <span
+              className={`font-serif text-xl font-bold transition-colors ${
+                scrolled ? 'text-stone-900' : 'text-white'
+              }`}
+            >
+              Sunset Lodge
+            </span>
+          </a>
+          <a
+            href="/booking/manage"
+            className={`text-sm font-medium transition-colors min-h-[44px] flex items-center ${
+              scrolled
+                ? 'text-stone-600 hover:text-stone-900'
+                : 'text-white/90 hover:text-white'
+            }`}
+          >
+            Manage Booking
+          </a>
         </div>
-        <a
-          href="/booking/manage"
-          className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors min-h-[44px] flex items-center"
-        >
-          Manage Booking
-        </a>
       </header>
 
       {/* Hero Section */}
-      <main className="flex flex-1 flex-col items-center justify-center px-4 pb-12 sm:px-6">
-        <div className="w-full max-w-2xl text-center">
-          {/* Hero text */}
-          <div className="mb-8 sm:mb-12">
-            <h1 className="text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl lg:text-5xl">
-              Your Perfect
-              <span className="block text-primary-600">Lodge Getaway</span>
-            </h1>
-            <p className="mt-4 text-base text-stone-600 sm:text-lg">
-              Escape the everyday. Discover comfort, nature, and unforgettable experiences
-              at our lodge.
+      <section className="relative flex min-h-[100dvh] flex-col items-center justify-center px-4 sm:px-6">
+        <HeroSlideshow />
+
+        <div className="relative z-10 w-full max-w-4xl text-center">
+          <p className="animate-fade-in text-sm font-medium uppercase tracking-[0.25em] text-gold-400">
+            Welcome to
+          </p>
+          <h1 className="mt-3 animate-fade-in font-serif text-4xl font-bold text-white sm:text-5xl lg:text-7xl">
+            Sunset Lodge
+          </h1>
+          <div className="divider-gold mx-auto mt-5" />
+          <p className="mx-auto mt-5 max-w-xl animate-slide-up text-base leading-relaxed text-white/80 sm:text-lg">
+            Escape the everyday. Discover comfort, nature, and unforgettable
+            experiences in our luxury lodge retreat.
+          </p>
+
+          <div className="mt-10 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+            <SearchForm variant="hero" />
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 animate-bounce">
+          <svg
+            className="h-6 w-6 text-white/60"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </div>
+      </section>
+
+      {/* Room Showcase */}
+      <section className="bg-white px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center">
+            <h2 className="section-heading">Our Accommodations</h2>
+            <div className="divider-gold mt-4" />
+            <p className="mt-4 text-stone-500">
+              Choose from our carefully curated selection of rooms and suites
             </p>
           </div>
 
-          {/* Search Form */}
-          <form
-            onSubmit={handleSubmit}
-            className="card mx-auto w-full max-w-lg"
-          >
-            <h2 className="mb-4 text-lg font-semibold text-stone-900">
-              Find Your Stay
-            </h2>
-
-            <div className="space-y-4">
-              {/* Check-in */}
-              <div>
-                <label
-                  htmlFor="check-in"
-                  className="mb-1.5 block text-sm font-medium text-stone-700"
-                >
-                  Check-in
-                </label>
-                <input
-                  id="check-in"
-                  type="date"
-                  value={checkIn}
-                  min={today}
-                  onChange={(e) => {
-                    setCheckIn(e.target.value);
-                    setErrors((prev) => ({ ...prev, checkIn: '' }));
-                  }}
-                  className="input-field"
-                />
-                {errors.checkIn && (
-                  <p className="mt-1 text-sm text-red-600">{errors.checkIn}</p>
-                )}
-              </div>
-
-              {/* Check-out */}
-              <div>
-                <label
-                  htmlFor="check-out"
-                  className="mb-1.5 block text-sm font-medium text-stone-700"
-                >
-                  Check-out
-                </label>
-                <input
-                  id="check-out"
-                  type="date"
-                  value={checkOut}
-                  min={checkIn || today}
-                  onChange={(e) => {
-                    setCheckOut(e.target.value);
-                    setErrors((prev) => ({ ...prev, checkOut: '' }));
-                  }}
-                  className="input-field"
-                />
-                {errors.checkOut && (
-                  <p className="mt-1 text-sm text-red-600">{errors.checkOut}</p>
-                )}
-              </div>
-
-              {/* Guests */}
-              <div>
-                <label
-                  htmlFor="guests"
-                  className="mb-1.5 block text-sm font-medium text-stone-700"
-                >
-                  Guests
-                </label>
-                <select
-                  id="guests"
-                  value={guests}
-                  onChange={(e) => setGuests(Number(e.target.value))}
-                  className="input-field"
-                >
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>
-                      {n} {n === 1 ? 'Guest' : 'Guests'}
-                    </option>
-                  ))}
-                </select>
-                {errors.guests && (
-                  <p className="mt-1 text-sm text-red-600">{errors.guests}</p>
-                )}
-              </div>
-
-              <Button type="submit" size="lg" className="w-full">
-                Search Availability
-              </Button>
-            </div>
-          </form>
-
-          {/* Features */}
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="flex flex-col items-center gap-2 rounded-lg p-4">
-              <svg className="h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-              </svg>
-              <h3 className="text-sm font-semibold text-stone-900">Instant Confirmation</h3>
-              <p className="text-xs text-stone-500">Book now, confirm instantly</p>
-            </div>
-            <div className="flex flex-col items-center gap-2 rounded-lg p-4">
-              <svg className="h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
-              </svg>
-              <h3 className="text-sm font-semibold text-stone-900">Best Price</h3>
-              <p className="text-xs text-stone-500">No hidden fees, guaranteed</p>
-            </div>
-            <div className="flex flex-col items-center gap-2 rounded-lg p-4">
-              <svg className="h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-              </svg>
-              <h3 className="text-sm font-semibold text-stone-900">24/7 Support</h3>
-              <p className="text-xs text-stone-500">We are here to help</p>
-            </div>
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {SHOWCASE_ROOMS.map((room) => (
+              <RoomCard
+                key={room.name}
+                variant="showcase"
+                name={room.name}
+                description={room.description}
+                price={room.price}
+              />
+            ))}
           </div>
         </div>
-      </main>
+      </section>
+
+      {/* Features Section */}
+      <section className="bg-stone-900 px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center">
+            <h2 className="font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Why Choose Us
+            </h2>
+            <div className="divider-gold mt-4" />
+          </div>
+
+          <div className="mt-12 grid gap-8 sm:grid-cols-3">
+            {FEATURES.map((feature) => (
+              <div key={feature.title} className="text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gold-500/10 text-gold-400">
+                  {feature.icon}
+                </div>
+                <h3 className="mt-4 font-serif text-lg font-semibold text-white">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-stone-400">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <TestimonialsSection />
 
       {/* Footer */}
-      <footer className="border-t border-stone-200 px-4 py-6 text-center text-xs text-stone-500 sm:px-6">
-        <p>Powered by Lodge Manager</p>
-      </footer>
+      <Footer />
     </div>
   );
 }
