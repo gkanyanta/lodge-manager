@@ -9,6 +9,23 @@ import { getRoomImages } from '@/lib/images';
 import Button from '@/components/ui/Button';
 import RoomCard from '@/components/booking/RoomCard';
 
+interface ApiRoomResult {
+  roomType: {
+    id: string;
+    name: string;
+    description: string;
+    maxOccupancy: number;
+    amenities: string | string[];
+    images: string[];
+  };
+  totalRooms: number;
+  bookedRooms: number;
+  availableRooms: number;
+  pricePerNight: string;
+  totalPrice: string;
+  nights: number;
+}
+
 interface RoomTypeResult {
   roomTypeId: string;
   name: string;
@@ -19,10 +36,6 @@ interface RoomTypeResult {
   basePrice: number;
   availableCount: number;
   images?: string[];
-}
-
-interface SearchResponse {
-  data: RoomTypeResult[];
 }
 
 interface SelectedRoom {
@@ -71,12 +84,31 @@ function SearchPageContent() {
     setError('');
 
     try {
-      const response = await api.post<SearchResponse>(
-        '/availability/search',
-        { checkIn, checkOut, guests },
+      const params = new URLSearchParams({ checkIn, checkOut, guests: String(guests) });
+      const raw = await api.get<ApiRoomResult[]>(
+        `/availability/search?${params}`,
         { tenantSlug },
       );
-      setResults(response.data || []);
+      const mapped: RoomTypeResult[] = (Array.isArray(raw) ? raw : []).map((r) => {
+        let amenities: string[] = [];
+        if (Array.isArray(r.roomType.amenities)) {
+          amenities = r.roomType.amenities;
+        } else if (typeof r.roomType.amenities === 'string') {
+          try { amenities = JSON.parse(r.roomType.amenities); } catch { /* ignore */ }
+        }
+        return {
+          roomTypeId: r.roomType.id,
+          name: r.roomType.name,
+          description: r.roomType.description,
+          maxOccupancy: r.roomType.maxOccupancy,
+          amenities,
+          effectivePrice: Number(r.pricePerNight),
+          basePrice: Number(r.pricePerNight),
+          availableCount: r.availableRooms,
+          images: r.roomType.images,
+        };
+      });
+      setResults(mapped);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to search availability.');
     } finally {
